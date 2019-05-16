@@ -12,9 +12,32 @@ illumination_power_dict = {'VAOL': 1000.42,
                            'APTF_BLUE': 360655.74}     # quasi-dome, blue
 
 
-
 def singularValuesFromWotfList(Hr_list, Hi_list, eps=None, support=None, method='direct'):
-    """returns a list of the singular values squared which are > epsilon."""
+    """Returns a list of the singular values squared which are > epsilon.
+
+        Parameters
+        ----------
+        Hr_list : list of arrays
+            List of real WOTFs
+        Hi_list : list of arrays
+            List of real WOTFs
+        eps : float, optional
+            Threshold for determining support, if support argument is not provided
+        support : array, optional
+            Binary array indicating the support from which to return singular values
+        method : str, optional
+            Method for calculating singular values, can be 'direct', 'svd', or 'eig'. Direct should be used for all purposes except comparison as it does not form the full matrix.
+
+
+        Raises
+        ------
+        ValueError
+
+        Returns
+        -------
+        singular_values : array
+            List of singular values, sorted largest to smallest
+    """
 
     # Parse threshold
     if eps is None:
@@ -71,11 +94,36 @@ def singularValuesFromWotfList(Hr_list, Hi_list, eps=None, support=None, method=
     return np.asarray(sorted(np.abs(singular_values_squared), reverse=True))
 
 
-def dnfFromWotfList(Hr_list, Hi_list, eps=None, support=None):
-    """Calculate DNF from WOTF List."""
+def dnfFromWotfList(Hr_list, Hi_list, eps=None, support=None, method='direct'):
+    """Calculate DNF from WOTF List.
+
+    Parameters
+    ----------
+    Hr_list : list of arrays
+        List of real WOTFs
+    Hi_list : list of arrays
+        List of real WOTFs
+    eps : float, optional
+        Threshold for determining support, if support argument is not provided
+    support : array, optional
+        Binary array indicating the support from which to return singular values
+    method : str, optional
+        Method for calculating singular values, can be 'direct', 'svd', or 'eig'. Direct should be used for all purposes except comparison as it does not form the full matrix.
+
+
+    Raises
+    ------
+    ValueError
+
+    Returns
+    -------
+    dnf : float
+        Deconvolution noise factor
+    """
 
     # Calculate singular values
-    sigma_squared = singularValuesFromWotfList(Hr_list, Hi_list, eps=eps, support=support)
+    sigma_squared = singularValuesFromWotfList(Hr_list, Hi_list, eps=eps,
+                                               support=support, method=method)
 
     # Calculate DNF
     f_squared = yp.abs(yp.sum(1 / sigma_squared) / len(sigma_squared))
@@ -88,9 +136,35 @@ def dnfFromWotfList(Hr_list, Hi_list, eps=None, support=None):
     return np.real(yp.sqrt(f_squared))
 
 
-def dnfFromSourcePositionList(led_pattern_list, shape, pupil=None,
-                              eps=None, support=None, **system_params):
-    """Calculate DNF from persecribed source pattern."""
+def dnfFromSourcePositionList(led_pattern_list, shape=(64, 64), pupil=None,
+                              eps=None, support=None,
+                              illumination_source_position_list_na=[],
+                              **system_params):
+    """Calculate DNF from persecribed source pattern.
+
+    Parameters
+    ----------
+    led_pattern_list : list
+        List of of normalized LED intensities, one float per LED. Ordering
+        corresponds to the same ordering in illumination_source_position_list_na.
+    shape : tuple, optional
+        Shape to use for generating rasterized sources
+    eps : float, optional
+        Threshold for determining support, if support argument is not provided
+    support : array, optional
+        Binary array indicating the support from which to return singular values
+    method : str, optional
+        Method for calculating singular values, can be 'direct', 'svd', or 'eig'. Direct should be used for all purposes except comparison as it does not form the full matrix.
+
+    Raises
+    ------
+    ValueError
+
+    Returns
+    -------
+    dnf : float
+        Deconvolution noise factor
+    """
 
     # Generate Hi and Hr
     from pydpc import wotfsFromSourcePositionList

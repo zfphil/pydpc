@@ -29,7 +29,19 @@ _system_params_default = {
 
 
 def getDefaultSystemParams(**kwargs):
-    """Returns a dict of default optical system parameters."""
+    """Returns a dict of default optical system parameters.
+
+    Parameters
+    ----------
+    **kwargs :
+        key-value pairs which will over-ride default parameters
+
+    Returns
+    -------
+    system_parameters: dict
+        Dict containing common system parameters
+    """
+
     params = copy.deepcopy(_system_params_default)
     for key in kwargs:
         if key in params:
@@ -53,62 +65,54 @@ def genDpcSourceList(shape,
                      **kwargs):
     """Generate list of rasterized DPC source patterns.
 
-    Arguments:
-        shape [2x1 tuple]:
-            Shape of measurements
+    Parameters
+    ----------
+    shape : tuple
+        Shape of measurements
 
-        dpc_type_list [list of str]:
-            List of escriptors of DPC types. Can be one of:
-                 "top": Standard half-circle, top orientation
-                 "bottom": Standard half-circle, bottom orientation
-                 "left": Standard half-circle, left orientation
-                 "right": Standard half-circle, right orientation
-                 "monopole_top": Monopole source, top orientation
-                 "monopole_bottom": Monopole source, bottom orientation
-                 "monopole_left": Monopole source, left orientation
-                 "monopole_right, Monopole source, right orientation
-                 "dipole_top": Dipole source, top orientation
-                 "dipole_bottom": Dipole source, bottom orientation
-                 "dipole_left": Dipole source, left orientation
-                 "dipole_right, Dipole source, right orientation
-                 "half": Source with 180 degree coverage, set orientation with angle kwarg
-                 "third": Source with 120 degree coverage, set orientation with angle kwarg
-                 "quadrant": Source with 90 degree coverage, set orientation with angle kwarg
+    dpc_type_list : list of str, optional
+        List of escriptors of DPC types. Can be one of:
+             "top": Standard half-circle, top orientation
+             "bottom": Standard half-circle, bottom orientation
+             "left": Standard half-circle, left orientation
+             "right": Standard half-circle, right orientation
+             "monopole_top": Monopole source, top orientation
+             "monopole_bottom": Monopole source, bottom orientation
+             "monopole_left": Monopole source, left orientation
+             "monopole_right, Monopole source, right orientation
+             "dipole_top": Dipole source, top orientation
+             "dipole_bottom": Dipole source, bottom orientation
+             "dipole_left": Dipole source, left orientation
+             "dipole_right, Dipole source, right orientation
+             "half": Source with 180 degree coverage, set orientation with angle kwarg
+             "third": Source with 120 degree coverage, set orientation with angle kwarg
+             "quadrant": Source with 90 degree coverage, set orientation with angle kwarg
 
-        angle:
-            Angle of source. Used onlt with "half", "third", or "quadrant" orientations
-
-        objective_numerical_aperture:
-            Objective numerical aperture
-
-        illumination_inner_na:
-            Inner NA cutoff of source
-
-        camera_pixel_size:
-            Pixel size of camera, usually microns
-
-        objective_magnification:
-            Magnification of objective. Total magnification is calculated as
-            the product of this and system_magnification keyword argument.
-
-        system_magnification:
-            Magnification of system (not including objective). Total
-            magnification is calculated as the product of this and
-            system_magnification keyword argument.
-
-        illumination_wavelength:
-            Wavelength of illuminaiton source, usually microns
-
-        center:
-            Whether to center (fftshift) the output
-
-        dtype:
-            Desired datatype of the source list (valid options are provided by
-            llops.valid_datatypes)
-
-        backend:
-            Desired backend of the source list (valid options are provided by
-            llops.valid_backends)
+    angle : float, optional
+        Angle of source. Used only with "half", "third", or "quadrant" orientations
+    objective_numerical_aperture : float, optional
+        Objective numerical aperture
+    illumination_inner_na : float, optional
+        Inner NA cutoff of source
+    camera_pixel_size : float, optional
+        Pixel size of camera, usually microns
+    objective_magnification : float, optional
+        Magnification of objective. Total magnification is calculated as
+        the product of this and system_magnification keyword argument.
+    system_magnification : float, optional
+        Magnification of system (not including objective). Total
+        magnification is calculated as the product of this and
+        system_magnification keyword argument.
+    illumination_wavelength : float, optional
+        Wavelength of illuminaiton source, usually microns
+    center : bool, optional
+        Whether to center (fftshift) the output
+    dtype : str, optional
+        Desired datatype of the source list (valid options are provided by
+        llops.valid_datatypes)
+    backend : str, optional
+        Desired backend of the source list (valid options are provided by
+        llops.valid_backends)
 
     """
 
@@ -122,20 +126,20 @@ def genDpcSourceList(shape,
 
     # Generate inner source
     source_inner = comptic.imaging.pupil(shape, camera_pixel_size=camera_pixel_size,
-                            objective_magnification=objective_magnification,
-                            system_magnification=system_magnification,
-                            illumination_wavelength=illumination_wavelength,
-                            objective_numerical_aperture=illumination_inner_na,
-                            center=center, dtype=dtype, backend=backend)
+                                         objective_magnification=objective_magnification,
+                                         system_magnification=system_magnification,
+                                         illumination_wavelength=illumination_wavelength,
+                                         objective_numerical_aperture=illumination_inner_na,
+                                         center=center, dtype=dtype, backend=backend)
 
     # Generate outer source
     source_outer = comptic.imaging.pupil(shape,
-                            camera_pixel_size=camera_pixel_size,
-                            objective_magnification=objective_magnification,
-                            system_magnification=system_magnification,
-                            illumination_wavelength=illumination_wavelength,
-                            objective_numerical_aperture=objective_numerical_aperture,
-                            center=center, dtype=dtype, backend=backend)
+                                         camera_pixel_size=camera_pixel_size,
+                                         objective_magnification=objective_magnification,
+                                         system_magnification=system_magnification,
+                                         illumination_wavelength=illumination_wavelength,
+                                         objective_numerical_aperture=objective_numerical_aperture,
+                                         center=center, dtype=dtype, backend=backend)
 
     # Get base source to filter for each source
     source_base = source_outer - source_inner
@@ -233,9 +237,61 @@ def genDpcSourceList(shape,
         return source_list
 
 
-def genDpcSourcePositionList(illumination_source_position_list_na, objective_numerical_aperture,
-                      dpc_type_list=('top', 'bottom', 'left', 'right'), **kwargs):
-    """Return a list of LED powers in each DPC pattern."""
+def genDpcSourcePositionList(dpc_type_list=('top', 'bottom', 'left', 'right'),
+                             objective_numerical_aperture=0.25,
+                             angle=0.0,
+                             illumination_inner_na=0.0,
+                             illumination_source_position_list_na=[],
+                             **kwargs):
+    """Generate list of DPC source patterns as illumination intensities of a
+       discrete source.
+
+    Parameters
+    ----------
+    shape : tuple
+        Shape of measurements
+
+    dpc_type_list : list of str, optional
+        List of escriptors of DPC types. Can be one of:
+             "top": Standard half-circle, top orientation
+             "bottom": Standard half-circle, bottom orientation
+             "left": Standard half-circle, left orientation
+             "right": Standard half-circle, right orientation
+             "monopole_top": Monopole source, top orientation
+             "monopole_bottom": Monopole source, bottom orientation
+             "monopole_left": Monopole source, left orientation
+             "monopole_right, Monopole source, right orientation
+             "dipole_top": Dipole source, top orientation
+             "dipole_bottom": Dipole source, bottom orientation
+             "dipole_left": Dipole source, left orientation
+             "dipole_right, Dipole source, right orientation
+             "half": Source with 180 degree coverage, set orientation with angle kwarg
+             "third": Source with 120 degree coverage, set orientation with angle kwarg
+             "quadrant": Source with 90 degree coverage, set orientation with angle kwarg
+
+    illumination_source_position_list_na : list of list, optional
+        List of source positions formatted as NA_y, NA_x tuples
+    angle : float, optional
+        Angle of source. Used only with "half", "third", or "quadrant" orientations
+    objective_numerical_aperture : float, optional
+        Objective numerical aperture
+    illumination_inner_na : float, optional
+        Inner NA cutoff of source
+
+    Returns
+    -------
+
+    led_pattern_list : list
+        List of led intensities for each LED coordinate in illumination_source_position_list_na
+    """
+
+    # Parse angle
+    if angle != 0.0:
+        raise NotImplementedError
+
+    # Parse inner illumination na
+    if illumination_inner_na != 0.0:
+        raise NotImplementedError
 
     # Get LEDs within numerical aperture
     illumination_source_position_list_na = np.asarray(illumination_source_position_list_na)
@@ -264,13 +320,97 @@ def genDpcSourcePositionList(illumination_source_position_list_na, objective_num
     return led_pattern_list
 
 
-def plotWotfList(Hr_list, Hi_list, source_names=None):
-    """Plot pairs of WOTFs."""
-    yp.listPlotFlat(Hr_list + [yp.imag(Hi) for Hi in Hi_list], source_names, max_width=4)
+def plotWotfList(Hr_list, Hi_list, labels=None, **kwargs):
+    """Plots pairs of WOTFs.
+
+    Parameters
+    ----------
+    Hr_list : list of arrays
+        List of real WOTFs
+    Hi_list : list of arrays
+        List of real WOTFs
+    source_labels : list, optional
+        List of str which label each source used to generate Hr_list and Hi_list
 
 
-def plotSourcePositionList(led_pattern_list, illumination_source_position_list_na, objective_numerical_aperture=None, labels=None, background_color='k', zoom=True, **kwargs):
-    """ Plot a list of LED patterns."""
+    Returns
+    -------
+
+    """
+
+    # Update labels for WOTFs
+    if labels is not None:
+        labels = [l + ' $H_r$' for l in labels] + [l + ' $H_i$' for l in labels]
+
+    # Create plot
+    yp.listPlotFlat(Hr_list + [yp.imag(Hi) for Hi in Hi_list], labels, max_width=4)
+
+
+def plotSourceList(led_source_list,
+                   illumination_source_position_list_na=0.25,
+                   objective_numerical_aperture=None,
+                   labels=None,
+                   background_color='k',
+                   zoom=True,
+                   **kwargs):
+    """Plot list of source patterns.
+
+    Parameters
+    ----------
+    led_pattern_list : list
+        List of of normalized LED intensities, one float per LED. Ordering
+        corresponds to the same ordering in illumination_source_position_list_na.
+    illumination_source_position_list_na : list of list, optional
+        List of source positions formatted as NA_y, NA_x tuples
+    objective_numerical_aperture : float, optional
+        Objective numerical aperture
+    source_labels : list, optional
+        List of str which label each source
+    background_color : str, optional
+        Background color for source positions
+    zoom : bool, optional
+        Whether to zoom into used LED positions
+
+
+    Returns
+    -------
+
+    """
+
+    # Plot sources
+    yp.listPlotFlat(led_source_list, labels)
+
+
+def plotSourcePositionList(led_pattern_list,
+                           illumination_source_position_list_na,
+                           objective_numerical_aperture=None,
+                           labels=None,
+                           background_color='k',
+                           zoom=True,
+                           **kwargs):
+    """Plot list of source patterns.
+
+    Parameters
+    ----------
+    led_pattern_list : list
+        List of of normalized LED intensities, one float per LED. Ordering
+        corresponds to the same ordering in illumination_source_position_list_na.
+    illumination_source_position_list_na : list of list, optional
+        List of source positions formatted as NA_y, NA_x tuples
+    objective_numerical_aperture : float, optional
+        Objective numerical aperture
+    source_labels : list, optional
+        List of str which label each source
+    background_color : str, optional
+        Background color for source positions
+    zoom : bool, optional
+        Whether to zoom into used LED positions
+
+
+    Returns
+    -------
+
+    """
 
     # Convert source position list to numpy array
     illumination_source_position_list_na = np.asarray(illumination_source_position_list_na)
@@ -301,22 +441,58 @@ def plotSourcePositionList(led_pattern_list, illumination_source_position_list_n
             plt.title(labels[index])
 
 
-def genMeasurementNonLinear(field, led_pattern, illumination_source_position_list_na=[],
+def genMeasurementNonLinear(field,
+                            led_pattern,
+                            illumination_source_position_list_na=[],
+                            objective_numerical_aperture=0.25,
+                            objective_magnification=10,
+                            system_magnification=1.0,
                             camera_pixel_size=6.5e-3,
-                            objective_numerical_aperture=0.25, objective_magnification=10,
-                            system_magnification=1.0, illumination_wavelength=0.53e-6,
+                            illumination_wavelength=0.53e-6,
                             **kwargs):
+    """Generates DPC measurements from a led pattern and complex field using a
+       non-linear (partially-coherent) forward model.
+
+    Parameters
+    ----------
+
+    field : array
+        Complex field to use for generating measurements
+    led_pattern : list
+        List of led patterns (intensities for each led in illumination_source_position_list_na)
+    illumination_source_position_list_na : list of list, optional
+        List of source positions formatted as NA_y, NA_x tuples
+    objective_numerical_aperture : float, optional
+        Objective numerical aperture
+    objective_magnification : float, optional
+        Magnification of objective. Total magnification is calculated as
+        the product of this and system_magnification keyword argument.
+    system_magnification : float, optional
+        Magnification of system (not including objective). Total
+        magnification is calculated as the product of this and
+        system_magnification keyword argument.
+    camera_pixel_size : float, optional
+        Pixel size of camera, usually microns
+    illumination_wavelength : float, optional
+        Wavelength of illuminaiton source, usually microns
+
+    Returns
+    -------
+    intensity : array
+        The simulated intensity using a non-linear forward model.
+
+    """
 
     # Generate pupil
     pupil = comptic.imaging.pupil(yp.shape(field),
-                     camera_pixel_size=camera_pixel_size,
-                     objective_magnification=objective_magnification,
-                     system_magnification=system_magnification,
-                     illumination_wavelength=illumination_wavelength,
-                     objective_numerical_aperture=objective_numerical_aperture,
-                     center=True,
-                     dtype=yp.getDatatype(field),
-                     backend=yp.getBackend(field))
+                                  camera_pixel_size=camera_pixel_size,
+                                  objective_magnification=objective_magnification,
+                                  system_magnification=system_magnification,
+                                  illumination_wavelength=illumination_wavelength,
+                                  objective_numerical_aperture=objective_numerical_aperture,
+                                  center=True,
+                                  dtype=yp.getDatatype(field),
+                                  backend=yp.getBackend(field))
 
     # Calculate Effective Pixel Size
     effective_pixel_size = camera_pixel_size / objective_magnification / system_magnification
@@ -338,20 +514,57 @@ def genMeasurementNonLinear(field, led_pattern, illumination_source_position_lis
     return intensity
 
 
-def genMeasurementsLinear(field, led_pattern_list, illumination_source_position_list_na=[],
+def genMeasurementsLinear(field,
+                          led_pattern_list,
+                          illumination_source_position_list_na=[],
+                          objective_numerical_aperture=0.25,
+                          objective_magnification=10,
+                          system_magnification=1.0,
                           camera_pixel_size=6.5e-3,
-                          objective_numerical_aperture=0.25, objective_magnification=10,
-                          system_magnification=1.0, illumination_wavelength=0.53e-6,
+                          illumination_wavelength=0.53e-6,
                           **kwargs):
+    """Generates DPC measurements from a led pattern and complex field using a
+       linear (WOTF-based) forward model.
+
+    Parameters
+    ----------
+
+    field : array
+        Complex field to use for generating measurements
+    led_pattern : list
+        List of led patterns (intensities for each led in illumination_source_position_list_na)
+    illumination_source_position_list_na : list of list, optional
+        List of source positions formatted as NA_y, NA_x tuples
+    objective_numerical_aperture : float, optional
+        Objective numerical aperture
+    objective_magnification : float, optional
+        Magnification of objective. Total magnification is calculated as
+        the product of this and system_magnification keyword argument.
+    system_magnification : float, optional
+        Magnification of system (not including objective). Total
+        magnification is calculated as the product of this and
+        system_magnification keyword argument.
+    camera_pixel_size : float, optional
+        Pixel size of camera, usually microns
+    illumination_wavelength : float, optional
+        Wavelength of illuminaiton source, usually microns
+
+    Returns
+    -------
+    intensity : array
+        The simulated intensity using a linear forward model.
+
+    """
 
     # Generate WOTFs
-    Hr_list, Hi_list = wotfsFromSourcePositionList(yp.shape(field), led_pattern_list,
-                                                   illumination_wavelength=illumination_wavelength,
-                                                   illumination_source_position_list_na=illumination_source_position_list_na,
-                                                   objective_magnification=objective_magnification,
-                                                   objective_numerical_aperture=objective_numerical_aperture,
-                                                   system_magnification=system_magnification,
-                                                   camera_pixel_size=camera_pixel_size)
+    Hr_list, Hi_list = genWotfsFromSourcePositionList(yp.shape(field),
+                                                      led_pattern_list,
+                                                      illumination_wavelength=illumination_wavelength,
+                                                      illumination_source_position_list_na=illumination_source_position_list_na,
+                                                      objective_magnification=objective_magnification,
+                                                      objective_numerical_aperture=objective_numerical_aperture,
+                                                      system_magnification=system_magnification,
+                                                      camera_pixel_size=camera_pixel_size)
 
     # Generate Intensity
     intensity_list = []
@@ -361,11 +574,70 @@ def genMeasurementsLinear(field, led_pattern_list, illumination_source_position_
     return intensity_list
 
 
-def rasterizeSource(shape, led_pattern, illumination_source_position_list_na=[],
-                    camera_pixel_size=6.5e-3,
-                    objective_numerical_aperture=0.25, objective_magnification=10,
-                    system_magnification=1.0, illumination_wavelength=0.53e-6,
-                    dtype=None, backend=None, **kwargs):
+def rasterizeSourcePositionList(shape,
+                                led_pattern,
+                                illumination_source_position_list_na=[],
+                                objective_numerical_aperture=0.25,
+                                objective_magnification=10,
+                                system_magnification=1.0,
+                                camera_pixel_size=6.5e-3,
+                                illumination_wavelength=0.53e-6,
+                                dtype=None, backend=None, **kwargs):
+    """Convert a LED pattern (list of led intensities corresponding to each
+       position in illumination_source_position_list_na) to a rasterized source.
+
+    Parameters
+    ----------
+
+    shape : tuple
+        Desired dimensions of rasterized source
+    led_pattern : list
+        List of led patterns (intensities for each led in illumination_source_position_list_na)
+    illumination_source_position_list_na : list of list, optional
+        List of source positions formatted as NA_y, NA_x tuples
+    objective_numerical_aperture : float, optional
+        Objective numerical aperture
+    objective_magnification : float, optional
+        Magnification of objective. Total magnification is calculated as
+        the product of this and system_magnification keyword argument.
+    system_magnification : float, optional
+        Magnification of system (not including objective). Total
+        magnification is calculated as the product of this and
+        system_magnification keyword argument.
+    camera_pixel_size : float, optional
+        Pixel size of camera, usually microns
+    illumination_wavelength : float, optional
+        Wavelength of illuminaiton source, usually microns
+    dtype : str, optional
+        Desired datatype of the source list (valid options are provided by
+        llops.valid_datatypes)
+    backend : str, optional
+        Desired backend of the source list (valid options are provided by
+        llops.valid_backends)
+
+    Returns
+    -------
+    intensity : array
+        The simulated intensity using a linear forward model.
+
+    """
+
+    # If we're passed a list, iterate over each source position list and return a list of rasterized sources.
+    if np.ndim(np.asarray(led_pattern)) == 2:
+        rasterized_source_list = []
+        for _pattern in led_pattern:
+            rasterized_source_list.append(rasterizeSourcePositionList(shape,
+                                                                      _pattern,
+                                                                      illumination_source_position_list_na=illumination_source_position_list_na,
+                                                                      objective_numerical_aperture=objective_numerical_aperture,
+                                                                      objective_magnification=objective_magnification,
+                                                                      system_magnification=system_magnification,
+                                                                      camera_pixel_size=camera_pixel_size,
+                                                                      illumination_wavelength=illumination_wavelength,
+                                                                      dtype=dtype, backend=backend, **kwargs))
+
+        # Return this list
+        return rasterized_source_list
 
     # Calculate Effective Pixel Size
     effective_pixel_size = camera_pixel_size / objective_magnification / system_magnification
@@ -379,7 +651,6 @@ def rasterizeSource(shape, led_pattern, illumination_source_position_list_na=[],
 
         # Calculate distance from illumination point
         dist = (kyy - led_na[0] / illumination_wavelength) ** 2 + (kxx - led_na[1] / illumination_wavelength) ** 2
-
         # Assign the correct position in the source
         source[yp.argmin(dist)] = led_power
 
@@ -387,7 +658,27 @@ def rasterizeSource(shape, led_pattern, illumination_source_position_list_na=[],
 
 
 def invert(measurement_list, Hr_list, Hi_list, reg_real=1e-8, reg_imag=1e-8):
-    """ Perform DPC inversion"""
+    """Perform direct DPC inversion using Tikhonov regularization.
+
+    Parameters
+    ----------
+    measurement_list : list
+        List of measurements to invert
+    Hr_list : list of arrays
+        List of real WOTFs
+    Hi_list : list of arrays
+        List of real WOTFs
+    reg_real : float, optional
+        Tikhonov regularization parameter to apply to Hr term
+    reg_imag : float, optional
+        Tikhonov regularization parameter to apply to Hi term
+
+    Returns
+    -------
+    field : array
+        Recovered complex field
+    """
+
 
     # Build AHA
     AHA_11 = sum([yp.abs(Hr) ** 2 for Hr in Hr_list]) + reg_real
@@ -420,42 +711,162 @@ def invert(measurement_list, Hr_list, Hi_list, reg_real=1e-8, reg_imag=1e-8):
     return field
 
 
-def wotfsFromSourceList(source_list, pupil=None, **system_params):
-    """Generate WOTFs given a list of sources."""
+def genWotfsFromSourceList(source_list,
+                           objective_numerical_aperture=0.25,
+                           objective_magnification=10,
+                           system_magnification=1.0,
+                           camera_pixel_size=6.5e-3,
+                           illumination_wavelength=0.53e-6,
+                           **kwargs):
+    """Generate list of WOTFs from a list of LED patterns (list of led
+       intensities corresponding to each position in illumination_source_position_list_na).
+
+    Parameters
+    ----------
+
+    source_list : list
+        List of rasterized (2D) sources
+    objective_numerical_aperture : float, optional
+        Objective numerical aperture
+    objective_magnification : float, optional
+        Magnification of objective. Total magnification is calculated as
+        the product of this and system_magnification keyword argument.
+    system_magnification : float, optional
+        Magnification of system (not including objective). Total
+        magnification is calculated as the product of this and
+        system_magnification keyword argument.
+    camera_pixel_size : float, optional
+        Pixel size of camera, usually microns
+    illumination_wavelength : float, optional
+        Wavelength of illuminaiton source, usually microns
+
+    Returns
+    -------
+    wotf_list : list
+        List of tuples containing arrays for (Hr, Hi) respectively
+
+    """
+
     # Generate pupil
-    if pupil is None:
-        pupil = comptic.imaging.pupil(yp.shape(source_list[0]), **system_params)
-
-    # Generate WOTFs
-    wotf_list = [genWotfs(source, pupil, **system_params) for source in source_list]
-    Hr_list, Hi_list = [wotf_pair[0] for wotf_pair in wotf_list], [wotf_pair[1] for wotf_pair in wotf_list]
-
-    # Return
-    return (Hr_list, Hi_list)
-
-
-def wotfsFromSourcePositionList(shape, led_pattern_list, **system_params):
-    """Generate WOTF for a list of source positions."""
-    # Generate sources
-    source_list = [rasterizeSource(shape, led_pattern, **system_params) for led_pattern in led_pattern_list]
+    pupil = comptic.imaging.pupil(yp.shape(source_list[0]),
+                                  objective_numerical_aperture=objective_numerical_aperture,
+                                  objective_magnification=objective_magnification,
+                                  system_magnification=system_magnification,
+                                  camera_pixel_size=camera_pixel_size,
+                                  illumination_wavelength=illumination_wavelength,
+                                  dtype=yp.getDatatype(source_list[0]),
+                                  backend=yp.getBackend(source_list[0]))
 
     # Generate WOTFs and return
-    return wotfsFromSourceList(source_list, pupil=None, **system_params)
+    return genWotfPair(source_list, pupil, illumination_wavelength)
 
+
+def genWotfsFromSourcePositionList(shape,
+                                   led_pattern_list,
+                                   illumination_source_position_list_na=[],
+                                   objective_numerical_aperture=0.25,
+                                   objective_magnification=10,
+                                   system_magnification=1.0,
+                                   camera_pixel_size=6.5e-3,
+                                   illumination_wavelength=0.53e-6,
+                                   dtype=None, backend=None, **kwargs):
+    """Generate list of WOTFs from a list of LED patterns (list of led
+       intensities corresponding to each position in illumination_source_position_list_na).
+
+    Parameters
+    ----------
+
+    shape : tuple
+        Desired dimensions of rasterized source
+    led_pattern : list
+        List of led patterns (intensities for each led in illumination_source_position_list_na)
+    illumination_source_position_list_na : list of list, optional
+        List of source positions formatted as NA_y, NA_x tuples
+    objective_numerical_aperture : float, optional
+        Objective numerical aperture
+    objective_magnification : float, optional
+        Magnification of objective. Total magnification is calculated as
+        the product of this and system_magnification keyword argument.
+    system_magnification : float, optional
+        Magnification of system (not including objective). Total
+        magnification is calculated as the product of this and
+        system_magnification keyword argument.
+    camera_pixel_size : float, optional
+        Pixel size of camera, usually microns
+    illumination_wavelength : float, optional
+        Wavelength of illuminaiton source, usually microns
+    dtype : str, optional
+        Desired datatype of the source list (valid options are provided by
+        llops.valid_datatypes)
+    backend : str, optional
+        Desired backend of the source list (valid options are provided by
+        llops.valid_backends)
+
+    Returns
+    -------
+    wotf_list : list
+        List of tuples containing arrays for (Hr, Hi) respectively
+
+    """
+
+    # Generate sources
+    source_list = [rasterizeSourcePositionList(shape, led_pattern,
+                                               illumination_source_position_list_na=illumination_source_position_list_na,
+                                               objective_numerical_aperture=objective_numerical_aperture,
+                                               objective_magnification=objective_magnification,
+                                               system_magnification=system_magnification,
+                                               camera_pixel_size=camera_pixel_size,
+                                               illumination_wavelength=illumination_wavelength,
+                                               dtype=dtype, backend=backend, **kwargs) for led_pattern in led_pattern_list]
+
+    # Generate pupil
+    pupil = comptic.imaging.pupil(shape,
+                                  objective_numerical_aperture=objective_numerical_aperture,
+                                  objective_magnification=objective_magnification,
+                                  system_magnification=system_magnification,
+                                  camera_pixel_size=camera_pixel_size,
+                                  illumination_wavelength=illumination_wavelength,
+                                  dtype=dtype,
+                                  backend=backend)
+
+    # Generate WOTFs and return
+    return genWotfPair(source_list, pupil, illumination_wavelength)
 
 # Generate Hu and Hp
-def genWotfs(source, pupil, illumination_wavelength, **kwargs):
+def genWotfPair(source, pupil, illumination_wavelength, **kwargs):
     """Function which generates the Weak-Object Transfer Functions (WOTFs) for absorption (Hu) and phase (Hp) given a source and pupul list
 
-    Args:
-        source_list: 3D ndarray of sources in the Fourier domain, where first dimensions are k_x, k_y and third is the number of transfer functions to generate
-        pupil_list: 3D ndarray of pupil functions in the Fourier domain, where first dimensions are k_x, k_y and third is the number of transfer functions to generate
-        lambda_list: list of wavelengths corresponding to the third dimension in sourceList and pupilList
-        shifted_output: Whether to perform a fftshift on the output before returning
+    Parameters
+    ----------
+        source : array
+            ndarray of source in the Fourier domain
+        pupil : array
+            ndarray of source in the Fourier domain
+        illumination_wavelength : float, optional
+            Wavelength of illuminaiton source, usually microns
 
-    Returns:
-        A 2D numpy array where the first dimension is the number of LEDs loaded and the second is (Na_x, NA_y)
+
+    Returns
+    -------
+    wotf_pair : tuple
+        Pair of arrays corresponding to (Hr, Hi) WOTFs
     """
+
+    # If a list of sources is provided, return a list of WOTF pairs
+    if np.ndim(source) == 3:
+        # Repeat pupil if necessary
+        if np.ndim(pupil) == 2:
+            pupil = [pupil] * len(source)
+
+        # Generate WOTF pairs
+        Hr_list, Hi_list = [], []
+        for _source, _pupil in zip(source, pupil):
+            Hr, Hi = genWotfPair(_source, _pupil, illumination_wavelength)
+            Hr_list += [Hr]
+            Hi_list += [Hi]
+
+        # Return
+        return Hr_list, Hi_list
 
     # Calculate source power
     DC = yp.sum((np.abs(pupil) ** 2 * source))
