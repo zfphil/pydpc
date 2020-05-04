@@ -2,7 +2,6 @@ import numpy as np
 import copy
 import matplotlib.pyplot as plt
 import llops as yp
-import libwallerlab.optics.ledarray as leds
 import comptic
 
 # Default illumination parameters
