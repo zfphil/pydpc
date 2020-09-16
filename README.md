@@ -1,5 +1,5 @@
 # pydpc: Implementation of Differential Phase Contrast Algorithm
-***Work in progress - API may change without warning***
+***DO NOT USE THIS MODULE - it has been replaced by [comptic](http://www.github.com/zfphil/comptic).dpc***
 
 ## Requirements
 numpy, scipy, [llops](http://www.github.com/zfphil/llops)

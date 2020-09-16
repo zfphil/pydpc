@@ -7,13 +7,15 @@ import comptic
 # Valid source types used in the functions below
 valid_source_types = ['top', 'bottom', 'left', 'right',
                       'monopole_top', 'monopole_bottom', 'monopole_left', 'monopole_right',
-                      'dipole_top', 'dipole_bottom', 'dipole_left', 'dipole_right',
-                      'half', 'third', 'quadrant']
+                      'dipole_vertical', 'dipole_horizontal', 'monopole', 'dipole',
+                      'half', 'third', 'quadrant', 'tripole_top', 'tripole',
+                      'tripole_bottom_right', 'tripole_bottom_left']
 
 # Define system parameters for our system
 _system_params_default = {
                              'pixel_count': (2580, 2180),
                              'objective_numerical_aperture': 0.25,
+                             'reflection_mode': False,
                              'objective_magnification': 10.2,
                              'system_magnification': 1.0,
                              'camera_pixel_size': 6.5e-6,
@@ -76,14 +78,18 @@ def genDpcSourceList(shape,
              "bottom": Standard half-circle, bottom orientation
              "left": Standard half-circle, left orientation
              "right": Standard half-circle, right orientation
+             "monopole, Monopole source, top orientation
              "monopole_top": Monopole source, top orientation
              "monopole_bottom": Monopole source, bottom orientation
              "monopole_left": Monopole source, left orientation
              "monopole_right, Monopole source, right orientation
-             "dipole_top": Dipole source, top orientation
-             "dipole_bottom": Dipole source, bottom orientation
-             "dipole_left": Dipole source, left orientation
-             "dipole_right, Dipole source, right orientation
+             "dipole_vertical": Dipole source, vertical orientation
+             "dipole_horizontal": Dipole source, horizontal orientation
+             "dipole": Dipole source, vertical orientation
+             "tripole": Tripole Source, spaced radially with the first above the origin
+             "tripole_top": Tripole Source, spaced radially with the first above the origin
+             "tripole_bottom_left": Tripole Source, spaced radially at bottom left point
+             "tripole_bottom_right": Tripole Source, spaced radially at bottom right point
              "half": Source with 180 degree coverage, set orientation with angle kwarg
              "third": Source with 120 degree coverage, set orientation with angle kwarg
              "quadrant": Source with 90 degree coverage, set orientation with angle kwarg
@@ -152,6 +158,21 @@ def genDpcSourceList(shape,
     ps_fourier = 1 / effective_pixel_size / np.asarray(shape)
     pupil_radius_px = int(np.round((objective_numerical_aperture / illumination_wavelength) / ps_fourier)[0])
 
+    # Helper funtcion for a rotated monopole
+    def rotated_monopole(source_base, angle=0):
+        from llops.geometry import rotation_matrix_2d
+        led_pattern = yp.zeros_like(source_base)
+
+        # Generate tempalate point and rotate
+        template_point = (0, -int(pupil_radius_px) + 2) # x,y
+        point = np.round(rotation_matrix_2d(np.deg2rad(0 + angle)).dot(template_point))
+
+        # Assign point
+        led_pattern[int(point[1] - shape[0] // 2), int(point[0] - shape[1] // 2)] = 1
+
+        # Return
+        return led_pattern
+
     # Generate LED source patterns
     source_list = []
     for dpc_type in dpc_type_list:
@@ -165,61 +186,38 @@ def genDpcSourceList(shape,
             led_pattern = source_base * (xx < 0)
         elif dpc_type.lower() == 'right':
             led_pattern = source_base * (xx > 0)
+        elif dpc_type.lower() == 'monopole':
+            led_pattern = rotated_monopole(source_base, 0 + angle)
         elif dpc_type.lower() == 'monopole_left':
-            furthest_index = [shape[0] // 2, shape[1] // 2 - pupil_radius_px]
-            led_pattern = yp.zeros_like(source_base)
-            led_pattern[furthest_index[0], furthest_index[1]] = 1.0
+            led_pattern = rotated_monopole(source_base, 270 + angle)
         elif dpc_type.lower() == 'monopole_right':
-            furthest_index = [shape[0] // 2, shape[1] // 2 + pupil_radius_px]
-            led_pattern = yp.zeros_like(source_base)
-            led_pattern[furthest_index[0], furthest_index[1]] = 1.0
+            led_pattern = rotated_monopole(source_base, 90 + angle)
         elif dpc_type.lower() == 'monopole_top':
-            furthest_index = [shape[0] // 2 - pupil_radius_px, shape[1] // 2]
-            led_pattern = yp.zeros_like(source_base)
-            led_pattern[furthest_index[0], furthest_index[1]] = 1.0
+            led_pattern = rotated_monopole(source_base, 0 + angle)
         elif dpc_type.lower() == 'monopole_bottom':
-            furthest_index = [shape[0] // 2 + pupil_radius_px, shape[1] // 2]
-            led_pattern = yp.zeros_like(source_base)
-            led_pattern[furthest_index[0], furthest_index[1]] = 1.0
-        elif dpc_type.lower() == 'dipole_left':
-            led_pattern = yp.zeros_like(source_base)
-            led_pattern[shape[0] // 2 - int(pupil_radius_px / np.sqrt(2)),
-                        shape[1] // 2 - int(pupil_radius_px / np.sqrt(2))] = 1.0
-
-            led_pattern[shape[0] // 2 + int(pupil_radius_px / np.sqrt(2)),
-                        shape[1] // 2 - int(pupil_radius_px / np.sqrt(2))] = 1.0
-        elif dpc_type.lower() == 'dipole_right':
-            led_pattern = yp.zeros_like(source_base)
-            led_pattern[shape[0] // 2 - int(pupil_radius_px / np.sqrt(2)),
-                        shape[1] // 2 + int(pupil_radius_px / np.sqrt(2))] = 1.0
-
-            led_pattern[shape[0] // 2 + int(pupil_radius_px / np.sqrt(2)),
-                        shape[1] // 2 + int(pupil_radius_px / np.sqrt(2))] = 1.0
-        elif dpc_type.lower() == 'dipole_top':
-            led_pattern = yp.zeros_like(source_base)
-            led_pattern[shape[0] // 2 - int(pupil_radius_px / np.sqrt(2)),
-                        shape[1] // 2 + int(pupil_radius_px / np.sqrt(2))] = 1.0
-
-            led_pattern[shape[0] // 2 - int(pupil_radius_px / np.sqrt(2)),
-                        shape[1] // 2 - int(pupil_radius_px / np.sqrt(2))] = 1.0
-        elif dpc_type.lower() == 'dipole_bottom':
-            led_pattern = yp.zeros_like(source_base)
-            led_pattern[shape[0] // 2 + int(pupil_radius_px / np.sqrt(2)),
-                        shape[1] // 2 + int(pupil_radius_px / np.sqrt(2))] = 1.0
-
-            led_pattern[shape[0] // 2 + int(pupil_radius_px / np.sqrt(2)),
-                        shape[1] // 2 - int(pupil_radius_px / np.sqrt(2))] = 1.0
-
+            led_pattern = rotated_monopole(source_base, 180 + angle)
+        elif dpc_type.lower() == 'dipole':
+            led_pattern = rotated_monopole(source_base, 0 + angle) + rotated_monopole(source_base, 180 + angle)
+        elif dpc_type.lower() == 'dipole_vertical':
+            led_pattern = rotated_monopole(source_base, 0 + angle) + rotated_monopole(source_base, 180 + angle)
+        elif dpc_type.lower() == 'dipole_horizontal':
+            led_pattern = rotated_monopole(source_base, 90 + angle) + rotated_monopole(source_base, 270 + angle)
+        elif dpc_type.lower() == 'tripole':
+            led_pattern = rotated_monopole(source_base, 0 + angle)
+        elif dpc_type.lower() == 'tripole_top':
+            led_pattern = rotated_monopole(source_base, 0 + angle)
+        elif dpc_type.lower() == 'tripole_bottom_right':
+            led_pattern = rotated_monopole(source_base, 120 + angle)
+        elif dpc_type.lower() == 'tripole_bottom_left':
+            led_pattern = rotated_monopole(source_base, 240 + angle)
         elif dpc_type.lower() == 'half':
             led_pattern = source_base
             led_pattern *= (yy * yp.sin(np.deg2rad(angle + 180)) <= xx * yp.cos(np.deg2rad(angle + 180)))
             led_pattern *= (yy * yp.sin(np.deg2rad(angle)) >= xx * yp.cos(np.deg2rad(angle)))
-
         elif dpc_type.lower() == 'third':
             led_pattern = source_base
             led_pattern *= (yy * yp.sin(np.deg2rad(angle + 120)) <= xx * yp.cos(np.deg2rad(angle + 120)))
             led_pattern *= (yy * yp.sin(np.deg2rad(angle)) >= xx * yp.cos(np.deg2rad(angle)))
-
         elif dpc_type.lower() == 'quadrant':
             led_pattern = source_base
             led_pattern *= (yy * yp.sin(np.deg2rad(angle + 90)) <= xx * yp.cos(np.deg2rad(angle + 90)))
@@ -318,6 +316,20 @@ def genDpcSourcePositionList(dpc_type_list=('top', 'bottom', 'left', 'right'),
 
     # Return
     return led_pattern_list
+
+def plotWotfCoverage(Hi_list, Hr_list, figsize=None):
+    import matplotlib.pyplot as plt
+
+    coverage_real = sum(yp.abs(Hr) for Hr in Hr_list)
+    coverage_imag = sum(yp.abs(Hi) for Hi in Hi_list)
+
+    plt.figure(figsize=figsize)
+    plt.subplot(121)
+    plt.imshow(coverage_real)
+    plt.title('$H_r$ Coverage')
+    plt.subplot(122)
+    plt.imshow(coverage_imag)
+    plt.title('$H_i$ Coverage')
 
 
 def plotWotfList(Hr_list, Hi_list, labels=None, **kwargs):
@@ -711,7 +723,7 @@ def invert(measurement_list, Hr_list, Hi_list, reg_real=1e-8, reg_imag=1e-8):
     return field
 
 
-def genWotfsFromSourceList(source_list,
+def genWotfsFromSourceList(source_list, pupil=None,
                            objective_numerical_aperture=0.25,
                            objective_magnification=10,
                            system_magnification=1.0,
@@ -726,6 +738,8 @@ def genWotfsFromSourceList(source_list,
 
     source_list : list
         List of rasterized (2D) sources
+    pupil : array, optional
+        A pupil to use, if desired
     objective_numerical_aperture : float, optional
         Objective numerical aperture
     objective_magnification : float, optional
@@ -748,14 +762,15 @@ def genWotfsFromSourceList(source_list,
     """
 
     # Generate pupil
-    pupil = comptic.imaging.pupil(yp.shape(source_list[0]),
-                                  objective_numerical_aperture=objective_numerical_aperture,
-                                  objective_magnification=objective_magnification,
-                                  system_magnification=system_magnification,
-                                  camera_pixel_size=camera_pixel_size,
-                                  illumination_wavelength=illumination_wavelength,
-                                  dtype=yp.getDatatype(source_list[0]),
-                                  backend=yp.getBackend(source_list[0]))
+    if pupil is None:
+        pupil = comptic.imaging.pupil(yp.shape(source_list[0]),
+                                      objective_numerical_aperture=objective_numerical_aperture,
+                                      objective_magnification=objective_magnification,
+                                      system_magnification=system_magnification,
+                                      camera_pixel_size=camera_pixel_size,
+                                      illumination_wavelength=illumination_wavelength,
+                                      dtype=yp.getDatatype(source_list[0]),
+                                      backend=yp.getBackend(source_list[0]))
 
     # Generate WOTFs and return
     return genWotfPair(source_list, pupil, illumination_wavelength)
@@ -869,7 +884,7 @@ def genWotfPair(source, pupil, illumination_wavelength, **kwargs):
         return Hr_list, Hi_list
 
     # Calculate source power
-    DC = yp.sum((np.abs(pupil) ** 2 * source))
+    DC = yp.sum((yp.abs(pupil) ** 2 * source))
 
     # Ensure source is non-zeros
     if DC == 0:
